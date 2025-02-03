@@ -24,7 +24,7 @@ import java.util.List;
 public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
 
-    public List<SendRequest> findByDestination(DestinationRequest destination) {
-        return chatMessageRepository.findByDestination(destination.destination()).orElseThrow(() -> new IllegalArgumentException("해당하는 방이 없습니다."));
+    public List<SendRequest> findByDestination(String destination) {
+        return chatMessageRepository.findByDestination(destination).orElseThrow(() -> new IllegalArgumentException("해당하는 방이 없습니다."));
     }
 }
