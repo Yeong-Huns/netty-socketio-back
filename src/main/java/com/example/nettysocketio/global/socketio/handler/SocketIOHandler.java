@@ -3,7 +3,7 @@ package com.example.nettysocketio.global.socketio.handler;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.example.nettysocketio.domains.message.dto.SendRequest;
-import com.example.nettysocketio.domains.message.repository.ChatMessageRepository;
+import com.example.nettysocketio.domains.message.service.ChatMessageService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SocketIOHandler {
     private final SocketIOServer socketIOServer;
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageService chatMessageService;
 
     @PostConstruct
     public void runServer(){
@@ -42,7 +42,7 @@ public class SocketIOHandler {
 
         socketIOServer.addEventListener("join", String.class, (client, room, ackRequest) -> {
             client.joinRoom(room);
-            List<SendRequest> previousMessage = chatMessageRepository.findByDestination((room)).orElseThrow(() -> new IllegalArgumentException("해당하는 방이 없습니다."));
+            List<SendRequest> previousMessage = chatMessageService.findByDestination((room));
             client.sendEvent("previousMessage", previousMessage);
             log.info("클라이언드 {}가 {} 방에 참여함. ackRequest: {}", client.getSessionId(), room, ackRequest);
         });
@@ -57,7 +57,7 @@ public class SocketIOHandler {
                 UUID destinationId = UUID.fromString(data.destination());
                 SocketIOClient destination = socketIOServer.getClient(destinationId);
                 if(destination != null){
-                    chatMessageRepository.save(data.toEntity());
+                    chatMessageService.saveMessage(data);
                     destination.sendEvent("privateMessage", data);
                     log.info("개인 메세지 전송: {} -> {}, 내용: {}", client.getSessionId(), destinationId, data.message());
                 } else {
@@ -69,7 +69,7 @@ public class SocketIOHandler {
         });
 
         socketIOServer.addEventListener("groupMessage", SendRequest.class, (client, data, ackRequest) -> {
-           chatMessageRepository.save(data.toEntity());
+           chatMessageService.saveMessage(data);
            String room = data.destination();
            socketIOServer.getRoomOperations(room).sendEvent("groupMessage", data);
             log.info("그룹 메세지 전송: [방 이름: {}], 발신자: {},  내용: {}", room , data.sender(), data.message());

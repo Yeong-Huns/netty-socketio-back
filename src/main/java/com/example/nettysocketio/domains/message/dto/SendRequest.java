@@ -16,4 +16,7 @@ public record SendRequest(String sender, String destination, String message) {
     public ChatMessage toEntity(){
         return new ChatMessage(sender, destination, message);
     }
+    public static SendRequest fromChatMessage(ChatMessage chatMessage){
+        return new SendRequest(chatMessage.getSender(), chatMessage.getDestination(), chatMessage.getMessage());
+    }
 }

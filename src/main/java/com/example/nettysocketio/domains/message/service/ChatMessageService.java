@@ -1,9 +1,8 @@
 package com.example.nettysocketio.domains.message.service;
 
-import com.example.nettysocketio.domains.message.domain.ChatMessage;
-import com.example.nettysocketio.domains.message.dto.DestinationRequest;
 import com.example.nettysocketio.domains.message.dto.SendRequest;
 import com.example.nettysocketio.domains.message.repository.ChatMessageRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +23,22 @@ import java.util.List;
 public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
 
+    @Transactional
     public List<SendRequest> findByDestination(String destination) {
-        return chatMessageRepository.findByDestination(destination).orElseThrow(() -> new IllegalArgumentException("해당하는 방이 없습니다."));
+        List<SendRequest> messages = chatMessageRepository.findByDestination(destination)
+                .stream()
+                .map(SendRequest::fromChatMessage)
+                .toList();
+
+        if(messages.isEmpty()) {
+            throw new IllegalArgumentException("해당하는 방이 없습니다.");
+        }
+
+        return messages;
+    }
+
+    @Transactional
+    public void saveMessage(SendRequest sendRequest) {
+        chatMessageRepository.save(sendRequest.toEntity());
     }
 }

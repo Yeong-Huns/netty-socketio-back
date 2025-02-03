@@ -20,5 +20,5 @@ import java.util.Optional;
  */
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
-    Optional<List<SendRequest>> findByDestination(String destination);
+    List<ChatMessage> findByDestination(String destination);
 }
