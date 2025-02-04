@@ -2,6 +2,7 @@ package com.example.nettysocketio.domains.message.service;
 
 import com.example.nettysocketio.domains.message.dto.SendRequest;
 import com.example.nettysocketio.domains.message.repository.ChatMessageRepository;
+import com.example.nettysocketio.global.error.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class ChatMessageService {
                 .toList();
 
         if(messages.isEmpty()) {
-            throw new IllegalArgumentException("해당하는 방이 없습니다.");
+            throw new NotFoundException("해당하는 방이 없습니다.");
         }
 
         return messages;

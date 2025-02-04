@@ -4,6 +4,7 @@ import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.example.nettysocketio.domains.message.dto.SendRequest;
 import com.example.nettysocketio.domains.message.service.ChatMessageService;
+import com.example.nettysocketio.global.error.exception.NotFoundException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class SocketIOHandler {
     private final ChatMessageService chatMessageService;
 
     @PostConstruct
-    public void runServer(){
+    public void runServer() {
         socketIOServer.addConnectListener(client -> {
             log.info("클라이언트 연결됨. {}", client.getSessionId());
         });
@@ -53,26 +54,23 @@ public class SocketIOHandler {
         });
 
         socketIOServer.addEventListener("privateMessage", SendRequest.class, (client, data, ackRequest) -> {
-            try{
-                UUID destinationId = UUID.fromString(data.destination());
-                SocketIOClient destination = socketIOServer.getClient(destinationId);
-                if(destination != null){
-                    chatMessageService.saveMessage(data);
-                    destination.sendEvent("privateMessage", data);
-                    log.info("개인 메세지 전송: {} -> {}, 내용: {}", client.getSessionId(), destinationId, data.message());
-                } else {
-                    log.info("존재하지않는 destinationId: {}", data.destination());
-                }
-            }catch(IllegalStateException e){
-                log.info("잘못된 수신자 : {} 에러 내용 : {} ", data.destination(), e.getMessage());
+            UUID destinationId = UUID.fromString(data.destination());
+            SocketIOClient destination = socketIOServer.getClient(destinationId);
+            if (destination != null) {
+                chatMessageService.saveMessage(data);
+                destination.sendEvent("privateMessage", data);
+                log.info("개인 메세지 전송: {} -> {}, 내용: {}", client.getSessionId(), destinationId, data.message());
+            } else {
+                throw new NotFoundException("존재하지 않는 사용자입니다.");
             }
+
         });
 
         socketIOServer.addEventListener("groupMessage", SendRequest.class, (client, data, ackRequest) -> {
-           chatMessageService.saveMessage(data);
-           String room = data.destination();
-           socketIOServer.getRoomOperations(room).sendEvent("groupMessage", data);
-            log.info("그룹 메세지 전송: [방 이름: {}], 발신자: {},  내용: {}", room , data.sender(), data.message());
+            chatMessageService.saveMessage(data);
+            String room = data.destination();
+            socketIOServer.getRoomOperations(room).sendEvent("groupMessage", data);
+            log.info("그룹 메세지 전송: [방 이름: {}], 발신자: {},  내용: {}", room, data.sender(), data.message());
         });
 
         socketIOServer.start();
